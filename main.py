@@ -47,14 +47,14 @@ def run_fpl_script(gw_comparison, force_update, manager_id):
         exit()
     # top_players = element_master[]
     team_master = add_team_names_to_team_master(team_master)
-    print(element_master)
-    print(team_master)
     manager_elements, manager_bank = return_manager_stats(manager_id, current_gameweek)
     suggested_transfers = suggest_transfers(manager_elements, manager_bank, element_master, gw_comparison)
-    suggest_starting_xi(manager_elements, element_master)
+    starting_xi = suggest_starting_xi(manager_elements, element_master)
+    print(suggested_transfers)
+    print(starting_xi)
     print(team_master)
-    print(element_master.sort_values(by=f'pp_{gw_comparison}', ascending=False).head(100))
+    print(element_master[element_master['element_type'] == 2].sort_values(by=f'pp_{gw_comparison}', ascending=False).head(100))
     print("--- %s seconds ---" % (time.time() - start_time))
 
 
-run_fpl_script(gw_comparison=1, force_update=True, manager_id=705204)
+run_fpl_script(gw_comparison=1, force_update=False, manager_id=705204)

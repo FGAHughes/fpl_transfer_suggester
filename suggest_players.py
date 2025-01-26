@@ -1,6 +1,7 @@
 import requests
 import pandas as pd
 import time
+import numpy as np
 
 # show all columns
 pd.set_option('display.width', 400)
@@ -51,13 +52,41 @@ def suggest_transfers(my_elements, bank, element_master, gw_comparison):
             suggested_transfers_main = pd.concat([suggested_transfers_main, suggested_transfers_sub], ignore_index=True)
     suggested_transfers_main.rename(columns={'web_name': 'in'})
     suggested_transfers_main.sort_values(by='pp_difference', ascending=False, inplace=True)
-    print(suggested_transfers_main)
     return suggested_transfers_main
 
 def suggest_starting_xi(my_elements, element_master):
     my_elements_data = my_elements.merge(element_master, how='left', left_on='element', right_on='og_id')
-    my_elements_data = my_elements_data[['web_name', 'pp_1']]
-    my_elements_data = my_elements_data.sort_values(by='pp_1', ascending=False)
-    my_elements_data.rename(columns={'pp_1': 'gameweek_points'})
-    print(my_elements_data)
-    return my_elements_data
+    my_elements_data = my_elements_data.sort_values(by='pp_1', ascending=False, ignore_index=True)
+    my_elements_data = my_elements_data[['web_name', 'pp_1', 'element_type']]
+    starting_xi = pd.DataFrame(columns=['web_name', 'pp_1', 'element_type'])
+    bench = pd.DataFrame(columns=['web_name', 'pp_1', 'element_type'])
+    element_type_needed = np.array([1, 3, 2, 1])
+    slots_remaining = 11
+    for i in range(15):
+        type_id = my_elements_data.element_type[i] - 1
+        if type_id == 0 and element_type_needed[type_id] == 0:
+            bench.loc[len(bench)] = my_elements_data.iloc[i, :]
+        # If there are spare slots remaining
+        elif slots_remaining > sum(element_type_needed):
+            # Add player to starting xi
+            starting_xi.loc[len(starting_xi)] = my_elements_data.iloc[i, :]
+            # Reduce slots remaining by 1 if
+            slots_remaining -=1
+            # If we don't already have enough of an element type, reduce the amount needed by 1
+            if element_type_needed[type_id] > 0:
+                element_type_needed[type_id] -=1
+        # If there aren't spare slots remaining
+        elif slots_remaining == sum(element_type_needed):
+            if element_type_needed[type_id] > 0:
+                starting_xi.loc[len(starting_xi)] = my_elements_data.iloc[i, :]
+                slots_remaining -= 1
+                if element_type_needed[type_id] > 0:
+                    element_type_needed[type_id] -= 1
+            else:
+                bench.loc[len(bench)] = my_elements_data.iloc[i, :]
+        else:
+            bench.loc[len(bench)] = my_elements_data.iloc[i, :]
+
+    starting_xi = pd.concat([starting_xi, bench], ignore_index=True)
+    starting_xi.rename(columns={'pp_1': 'gameweek_points'})
+    return starting_xi

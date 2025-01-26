@@ -2,6 +2,7 @@ import sys
 import numpy as np
 import pandas as pd
 
+
 from time_funcs import return_current_gameweek
 
 
@@ -17,6 +18,7 @@ def return_next_seven_opponents(element_team, element_fixtures, cgw):
         else:
             next_seven_fixtures.append((home_fixtures[i]))
     return next_seven_fixtures
+
 
 def past_x_performances(element_history, x):
     element_history = element_history[['goals_scored',
@@ -44,7 +46,7 @@ def past_x_performances(element_history, x):
     sum_previous_seven_fix = previous_x_fix_stats.sum(axis=0).to_list()
     games_played = previous_x_fix_stats[previous_x_fix_stats['minutes'] > 0].count()[4]
     if games_played > 0:
-        avg_stats_across_x = [x/games_played for x in sum_previous_seven_fix]
+        avg_stats_across_x = [x / games_played for x in sum_previous_seven_fix]
         avg_stats_across_x[5] = sum_previous_seven_fix[5]
     else:
         avg_stats_across_x = [0, 0, 0, 0, 0, 0, 0]
