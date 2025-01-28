@@ -62,12 +62,16 @@ def create_element_master(main_response, current_gameweek):
             print('Duplicate: ', element_master.id[element])
         elements_added.append(element_master.id[element])
     all_element_stats = np.asarray(all_element_stats, dtype='object')
-    print(len(all_element_stats))
-    print(len(all_element_fixtures))
-    print(len(element_master))
     all_element_fixtures = np.asarray(all_element_fixtures, dtype='object')
     element_master[['xg_value', 'xa_value', 'xgc_value', 'saves', 'minutes', 'starts', 'bonus']] = all_element_stats
-    element_master[['fix1', 'fix2', 'fix3', 'fix4', 'fix5', 'fix6', 'fix7']] = all_element_fixtures
+    element_master[['fix1a', 'fix1b',
+                    'fix2a', 'fix2b',
+                    'fix3a', 'fix3b',
+                    'fix4a', 'fix4b',
+                    'fix5a', 'fix5b',
+                    'fix6a', 'fix6b',
+                    'fix7a', 'fix7b'
+                    ]] = all_element_fixtures
     element_master = add_positional_multipliers(element_master)
     element_master['chance_of_playing_next_round'] = element_master['chance_of_playing_next_round'].fillna(100.0)
 
@@ -90,7 +94,8 @@ def add_team_data(team_master, element_master):
     element_master.drop(columns='team_id', inplace=True)
     element_master = element_master.rename(columns={'team_xg': 'element_team_xg',
                                                     'team_xa': 'element_team_xa',
-                                                    'team_xgc': 'element_team_xgc'
+                                                    'team_xgc': 'element_team_xgc',
+                                                    'team_name': 'element_team_name'
                                                     })
     return element_master
 
@@ -98,34 +103,15 @@ def add_team_data(team_master, element_master):
 def predict_points(team_master, element_master, gw_comparison):
     # non_starters = element_master[element_master['starts'] == 0]
     # element_master = element_master.drop(element_master[element_master['starts'] == 0].index)
-    for fixture in range(1, 8, 1):
-        upcomming_fixture = f'fix{fixture}'
-        element_master = element_master.merge(team_master, how='left', left_on=upcomming_fixture, right_on='team_id')
-        expected_goal_points = ((element_master.xg_value / element_master.element_team_xg
-                                 * (
-                                         element_master.team_xgc + element_master.element_team_xg) / 2)) * element_master.goal_multi
-        expected_assist_points = ((element_master.xa_value / element_master.element_team_xg)
-                                  * ((
-                                             element_master.team_xgc + element_master.element_team_xg) / 2)) * element_master.assist_multi
-        expected_cs_points = 2.718281828459045 ** (
-            -((element_master.element_team_xgc + element_master.team_xg) / 2)) * element_master.cs_multi
-        expected_save_points = element_master.saves / 3
-        expected_bonus = element_master.bonus
-        element_master[f'gw{fixture}_pp'] = (expected_goal_points +
-                                             expected_assist_points +
-                                             expected_save_points +
-                                             expected_cs_points +
-                                             expected_bonus)
-        element_master[f'gw{fixture}_pp'] = element_master.apply(
-            lambda row: row[f'gw{fixture}_pp'] + 2 if row['minutes'] > 60 else row[f'gw{fixture}_pp'] + 1 if 0 < row[
-                'minutes'] < 60 else row[f'gw{fixture}_pp'], axis=1)
-        element_master[f'gw{fixture}_pp'] = element_master.apply(
-            lambda row: 0 if (row['chance_of_playing_next_round'] < 75 or row['starts'] <= 2) else row[
-                f'gw{fixture}_pp'], axis=1)
-        element_master.drop(columns=['team_xg', 'team_xa', 'team_xgc', 'team_id'], inplace=True)
+    for fixture in range(1, 8):
+        element_master = predict_gameweek_points(element_master, team_master, fixture, 'a')
+        element_master = predict_gameweek_points(element_master, team_master, fixture, 'b')
 
     for gw in range(1, 8):
-        element_master = add_predict_points_column(element_master, gw)
+        element_master = add_gw_predicted_points_column(element_master, gw)
+
+    for gw in range(1, 8):
+        element_master = add_cumulative_predict_points_column(element_master, gw)
     element_master = element_master[['id',
                                      'og_id',
                                      'web_name',
@@ -154,28 +140,70 @@ def predict_points(team_master, element_master, gw_comparison):
                                      'pp_6',
                                      'pp_7'
                                      ]]
-    element_master[['minutes', 'xg_value', 'xa_value', 'xgc_value', 'chance_of_playing_next_round',
-                    'gw1_pp', 'gw2_pp', 'gw3_pp', 'gw4_pp', 'gw5_pp', 'gw6_pp', 'gw7_pp',
-                    'pp_1', 'pp_2', 'pp_3', 'pp_4', 'pp_5', 'pp_6', 'pp_7']] = \
-        element_master[['minutes', 'xg_value', 'xa_value', 'xgc_value', 'chance_of_playing_next_round',
-                        'gw1_pp', 'gw2_pp', 'gw3_pp', 'gw4_pp', 'gw5_pp', 'gw6_pp', 'gw7_pp',
-                        'pp_1', 'pp_2', 'pp_3', 'pp_4', 'pp_5', 'pp_6', 'pp_7']].round(decimals=2)
+    element_master[['minutes',
+                    'now_cost',
+                    'bonus',
+                    'xg_value',
+                    'xa_value',
+                    'xgc_value',
+                    'chance_of_playing_next_round',
+                    'gw1_pp',
+                    'gw2_pp',
+                    'gw3_pp',
+                    'gw4_pp',
+                    'gw5_pp',
+                    'gw6_pp',
+                    'gw7_pp',
+                    'pp_1',
+                    'pp_2',
+                    'pp_3',
+                    'pp_4',
+                    'pp_5',
+                    'pp_6',
+                    'pp_7']] = \
+        element_master[['minutes',
+                        'now_cost',
+                        'bonus',
+                        'xg_value',
+                        'xa_value',
+                        'xgc_value',
+                        'chance_of_playing_next_round',
+                        'gw1_pp',
+                        'gw2_pp',
+                        'gw3_pp',
+                        'gw4_pp',
+                        'gw5_pp',
+                        'gw6_pp',
+                        'gw7_pp',
+                        'pp_1',
+                        'pp_2',
+                        'pp_3',
+                        'pp_4',
+                        'pp_5',
+                        'pp_6',
+                        'pp_7']].round(decimals=2)
     element_master.sort_values(by=f'pp_{gw_comparison}', ascending=False, inplace=True)
-    element_master.to_csv('element_master.csv')
+    element_master.to_csv('element_master.csv', index=False)
     return element_master
 
 
 def create_team_master(element_master):
     team_df = []
+    # Appending team '0' which will be used for blank gameweeks
+    team_df.append([0, 'BLANK', 0, 0, 0])
+    team_names = ['ARS', 'AVL', 'BOU', 'BRE', 'BRI', 'CHE', 'CRY', 'EVE', 'FUL', 'IPS',
+                  'LEI', 'LIV', 'MCI', 'MUN', 'NEW', 'NFO', 'SOU', 'TOT', 'WHU', 'WOL']
     for i in range(1, 21):
         team_row = []
         team_players = element_master.groupby('team').get_group(i)
         team_row.append(i)
+        team_row.append(team_names[i - 1])
         team_row.append((sum(team_players.xg_value)))
         team_row.append((sum(team_players.xa_value)))
         team_row.append(sum(team_players.xgc_value) / 11)
         team_df.append(team_row)
     team_master = pd.DataFrame(team_df, columns=['team_id',
+                                                 'team_name',
                                                  'team_xg',
                                                  'team_xa',
                                                  'team_xgc'
@@ -228,35 +256,45 @@ def return_last_update_time():
     return None
 
 
-def add_predict_points_column(element_master, forecast_gameweeks):
-    element_master[f'pp_{forecast_gameweeks}'] = 0
-    for gw in range(1, forecast_gameweeks + 1):
-        element_master[f'pp_{forecast_gameweeks}'] += element_master[f'gw{gw}_pp']
+def add_gw_predicted_points_column(element_master, gw):
+    element_master[f'gw{gw}_pp'] = element_master[f'gw{gw}_ppa'] + element_master[f'gw{gw}_ppb']
     return element_master
 
 
-def add_team_names_to_team_master(team_master):
-    team_name = [
-        "Arsenal",
-        "Aston Villa",
-        "Bournemouth",
-        "Brentford",
-        "Brighton & Hove Albion",
-        "Chelsea",
-        "Crystal Palace",
-        "Everton",
-        "Fulham",
-        "Ipswich Town",
-        "Leicester City",
-        "Liverpool",
-        "Manchester City",
-        "Manchester United",
-        "Newcastle United",
-        "Nottingham Forest",
-        "Southampton",
-        "Tottenham Hotspur",
-        "West Ham United",
-        "Wolverhampton Wanderers"
-    ]
-    team_master.insert(loc=0, column='teams', value=team_name)
-    return team_master
+def add_cumulative_predict_points_column(element_master, forecast_gameweeks):
+    element_master[f'pp_{forecast_gameweeks}'] = 0
+    for gw in range(1, forecast_gameweeks + 1):
+        element_master[f'pp_{forecast_gameweeks}'] += element_master[f'gw{gw}_ppa'] + element_master[
+            f'gw{gw}_ppb']
+
+    return element_master
+
+
+def predict_gameweek_points(element_master, team_master, gameweek, a_or_b):
+    upcomming_fixture = f'fix{gameweek}{a_or_b}'
+    element_master = element_master.merge(team_master, how='left', left_on=upcomming_fixture, right_on='team_id')
+    expected_goal_points = ((element_master.xg_value / element_master.element_team_xg
+                             * (
+                                     element_master.team_xgc + element_master.element_team_xg) / 2)) * element_master.goal_multi
+    expected_assist_points = ((element_master.xa_value / element_master.element_team_xg)
+                              * ((
+                                         element_master.team_xgc + element_master.element_team_xg) / 2)) * element_master.assist_multi
+    expected_cs_points = 2.718281828459045 ** (
+        -((element_master.element_team_xgc + element_master.team_xg) / 2)) * element_master.cs_multi
+    expected_save_points = element_master.saves / 3
+    expected_bonus = element_master.bonus
+    element_master[f'gw{gameweek}_pp{a_or_b}'] = (expected_goal_points +
+                                                  expected_assist_points +
+                                                  expected_save_points +
+                                                  expected_cs_points +
+                                                  expected_bonus)
+    element_master[f'gw{gameweek}_pp{a_or_b}'] = element_master.apply(
+        lambda row: row[f'gw{gameweek}_pp{a_or_b}'] + 2 if row['minutes'] > 60 else row[f'gw{gameweek}_pp{a_or_b}'] + 1
+        if 0 < row['minutes'] < 60 else row[f'gw{gameweek}_pp{a_or_b}'], axis=1)
+    element_master[f'gw{gameweek}_pp{a_or_b}'] = element_master.apply(
+        lambda row: 0 if (row['chance_of_playing_next_round'] < 75 or row['starts'] <= 2) else row[
+            f'gw{gameweek}_pp{a_or_b}'], axis=1)
+    element_master[f'gw{gameweek}_pp{a_or_b}'] = element_master.apply(
+        lambda row: 0 if row[f'fix{gameweek}{a_or_b}'] == 0 else row[f'gw{gameweek}_pp{a_or_b}'], axis=1)
+    element_master.drop(columns=['team_xg', 'team_xa', 'team_xgc', 'team_id', 'team_name'], inplace=True)
+    return (element_master)

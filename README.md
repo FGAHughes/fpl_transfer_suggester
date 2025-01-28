@@ -6,4 +6,4 @@ The algorithm will create a series of dataframes to help with transfer decisions
 
 Some limitations of the algorithm include:
 - Not factoring in double or blank gameweeks for predicted points in upcoming fixtures.
-- Affordable transfers are calculated by players absolute values. For example, if you bought a player for 5.0 and they are now worth 5.4, their value to you will be 5.2 but the algorithm may suggest players 5.4 in addition to what is available in your bank.
+- Affordable transfers are calculated by players absolute values. For example, if you bought a player for 5.0 and they are now worth 5.4, their value to you will be 5.2 but the algorithm may suggest players 5.4 in addition to what is available in your bank. 
