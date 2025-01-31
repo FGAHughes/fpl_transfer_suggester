@@ -249,7 +249,7 @@ def create_team_master(element_master):
     return team_master
 
 
-# A function that returns an elements upcoming fixtures and stats across previous fixtures
+# A function that returns an element's upcoming fixtures and stats across previous fixtures
 def create_element_dfs(element_original_id):
     element_response = requests.get(f'https://fantasy.premierleague.com/api/element-summary/{element_original_id}/')
     element_fixtures = pd.json_normalize(element_response.json(), record_path='fixtures')
