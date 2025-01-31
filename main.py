@@ -1,6 +1,11 @@
 import pandas as pd
 import time
 import warnings
+from create_df_funcs import return_main_response, create_element_master, create_team_master, add_team_data, \
+    predict_points
+from fpl_2425.fpl_transfer_suggester.time_funcs import save_update_time, update_or_not
+from time_funcs import return_current_gameweek
+from suggest_elements import return_manager_stats, suggest_transfers, suggest_starting_xi
 
 # show all columns and rows
 pd.set_option('display.width', None)
@@ -9,14 +14,8 @@ pd.set_option('display.max_rows', None)
 
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
-from create_df_funcs import return_main_response, create_element_master, create_team_master, add_team_data, \
-    predict_points
-from fpl_2425.fpl_transfer_suggester.time_funcs import save_update_time, update_or_not
 
-from time_funcs import return_current_gameweek, most_recent_fixture
-from suggest_elements import return_manager_stats, suggest_transfers, suggest_starting_xi
-
-# TO RUN THE PROGRAM, NAVIGATE TO THE BOTTOM AND INPUT YOUR PARAMETERS THERE
+# TO RUN THE PROGRAM, NAVIGATE TO THE BOTTOM AND INPUT YOUR PARAMETERS INTO THE FUNCTION
 def run_fpl_script(gw_comparison, force_update, manager_id):
     start_time = time.time()
     # Return's a json file from the fpl website, containing key data
@@ -54,7 +53,7 @@ def run_fpl_script(gw_comparison, force_update, manager_id):
         # Predict each elements points across the next 7 fixtures
         element_master = predict_points(team_master, element_master, gw_comparison)
         # Print time take to update
-        print("--- %s seconds ---" % (time.time() - start_time))
+        print("--- Data Upload Run Time: %s seconds ---" % (time.time() - start_time))
 
     else:
         # If you didn't put True or False as 'force_update' parameter
@@ -74,6 +73,7 @@ def run_fpl_script(gw_comparison, force_update, manager_id):
     print(suggested_transfers)
     # Show suggested starting 11
     print(starting_xi)
+    print("--- Total Run Time: %s seconds ---" % (time.time() - start_time))
 
 
 # Input parameters here to run the script
