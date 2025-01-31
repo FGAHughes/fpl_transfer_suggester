@@ -10,7 +10,8 @@ pd.set_option('display.max_rows', None)
 warnings.simplefilter(action='ignore', category=FutureWarning)
 
 from create_df_funcs import return_main_response, create_element_master, create_team_master, add_team_data, \
-    predict_points, update_or_not, save_update_time
+    predict_points
+from fpl_2425.fpl_transfer_suggester.time_funcs import save_update_time, update_or_not
 
 from time_funcs import return_current_gameweek, most_recent_fixture
 from suggest_elements import return_manager_stats, suggest_transfers, suggest_starting_xi
