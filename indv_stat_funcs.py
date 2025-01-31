@@ -6,42 +6,55 @@ import pandas as pd
 from time_funcs import return_current_gameweek
 
 
-def return_next_seven_opponents(element_team, element_fixtures, cgw):
-    # not including fixtures from the current gameweek that haven't finished yet
+# A function to return an elements opponents in the next 7 gameweeks
+def return_opponents_in_next_seven_gws(element_team, element_fixtures, cgw):
+    # Remove fixtures from the current gameweek that haven't finished yet
     element_fixtures = element_fixtures[element_fixtures.event != cgw]
     element_fixtures.reset_index(inplace=True)
+    # Make lists of fixtures that can be used to identify the opponent by comparing against the element's team ID
     home_fixtures = element_fixtures.team_h.to_list()
     away_fixtures = element_fixtures.team_a.to_list()
+    # Will store fixtures
     fixtures = []
+    # Used to index rows and starts at -1 so that the first index is 0
     row_index = -1
-    # There is no previous gw in the fixture df, so we set it as what would be the previous gameweek
+    # The length of fixtures should be 14 as we want every fixture from the next 7 gameweeks, accounting for the fact
+    # that there could be a double any week
     while len(fixtures) < 14:
         row_index += 1
+        # Determine who the opponent is by knowing it is not the element's team
         if element_team == home_fixtures[row_index]:
             next_opponent = away_fixtures[row_index]
         else:
             next_opponent = home_fixtures[row_index]
+        # The gameweek of the next fixtures
         next_gameweek = element_fixtures.event[row_index]
-        # for each fixture, find out what the fixture after it as well
+        # for each fixture, find out what the fixture after it as well, if there is one
         try:
             following_gameweek = element_fixtures.event[row_index + 1]
-        # if there is no fixture after, then fill up the rest of the list with 0s
+        # if there is no fixture after, then fill up the rest of the list with 0s to signify no fixtures
         except KeyError:
             [fixtures.append(0) for x in range(14 - len(fixtures))]
             break
+        # if the gw of the next fixture is more than one gw away, add two 0s for every blank gameweek
         if next_gameweek > cgw + 1:
             [fixtures.append(0) for x in range(2*(next_gameweek-cgw-1))]
+        # Add opponenet to fixtures list
         fixtures.append(next_opponent)
-        # then if the next fixture isn't the same as the current gameweek, append a 0
+        # Then if the next fixture isn't the same as the current gameweek, append a 0 as it's not a double gw
         if following_gameweek > next_gameweek and next_gameweek != cgw:
              fixtures.append(0)
+        # Store the gameweek we just used, so we can compare for the above
         cgw = next_gameweek
+    # Depending on the gap between the second last and last gws, it may append too many 0s so we use this as a failsafe
     if len(fixtures) > 14:
         fixtures = fixtures[0:14]
     return fixtures
 
 
+# A function to return the average statistics of each element across a given number of fixtures
 def past_x_performances(element_history, x):
+    # Select the stats we want averages for
     element_history = element_history[['goals_scored',
                                        'assists',
                                        'goals_conceded',
@@ -53,9 +66,11 @@ def past_x_performances(element_history, x):
                                        'starts',
                                        'bonus'
                                        ]].astype(float)
+    # For goals, assists and goals conceded, create a value that equals the average between actual and expecteds
     element_history['xg_value'] = (element_history.goals_scored + element_history.expected_goals) / 2
     element_history['xa_value'] = (element_history.assists + element_history.expected_assists) / 2
     element_history['xgc_value'] = (element_history.goals_conceded + element_history.expected_goals_conceded) / 2
+    # Remove columns we just used to average
     element_history = element_history[['xg_value',
                                        'xa_value',
                                        'xgc_value',
@@ -63,30 +78,33 @@ def past_x_performances(element_history, x):
                                        'minutes',
                                        'starts',
                                        'bonus']]
+    # Return the element's last x fixtures
     previous_x_fix_stats = return_n_rows_from_bottom(x, element_history)
+    # Create new list of fixtures that contains a sum of the elements stats in their past x fixtures
     sum_previous_seven_fix = previous_x_fix_stats.sum(axis=0).to_list()
+    # Calculate the number of games they have played by counting fixtures in range x where their minutes > 0
     games_played = previous_x_fix_stats[previous_x_fix_stats['minutes'] > 0].count()[4]
+    # If they played at least one game
     if games_played > 0:
+        # divide each stat by the number of games they played to find the average
         avg_stats_across_x = [x / games_played for x in sum_previous_seven_fix]
+        # Add total starts back into the list, rather than average starts
         avg_stats_across_x[5] = sum_previous_seven_fix[5]
+    # If they played no games, set each stat to 0
     else:
         avg_stats_across_x = [0, 0, 0, 0, 0, 0, 0]
     return avg_stats_across_x
 
 
+# A function to return a given amount of rows from the bottom of a df, or as many as is possible to return up to n
 def return_n_rows_from_bottom(n, df):
+    # If there are at least as many rows as requested to return
     if len(df) >= n:
         bottom = len(df)
         n_from_bottom = len(df) - n
-        element_statistics = df.iloc[n_from_bottom:bottom, :]
+        n_rows = df.iloc[n_from_bottom:bottom, :]
+    # If there aren't at least as many, return as many as possible
     else:
-        element_statistics = df.iloc[:, :]
-    n_rows = element_statistics
+        n_rows = df.iloc[:, :]
     return n_rows
 
-# def decide_home_fixture(array):
-#     if previous_fixture != fixtures[i] and:
-#         if home_fixtures[i] == element_team:
-#             next_seven_fixtures.append([away_fixtures[i]])
-#         else:
-#             next_seven_fixtures.append(home_fixtures[i])

@@ -1,12 +1,14 @@
 import requests
 import pandas as pd
 
+
+# Returns json file from FPL API that can be used to return element_master, fixture_master, etc
 def return_main_response():
     main_response = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/')
     return main_response
 
 
-
+#
 def return_element_fixtures(element_original_id):
     element_response = requests.get(f'https://fantasy.premierleague.com/api/element-summary/{element_original_id}/')
     element_fixtures = pd.json_normalize(element_response.json(), record_path='fixtures')
