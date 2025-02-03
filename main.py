@@ -73,6 +73,9 @@ def run_fpl_script(gw_comparison, force_update, manager_id):
     print(suggested_transfers)
     # Show suggested starting 11
     print(starting_xi)
+    # If you want to see a specific player's statistics and predicted points, write out the code as follows:
+    # print(element_master[element_master['web_name']=='NAME_ON_FPL_HERE'])
+
     print("--- Total Run Time: %s seconds ---" % (time.time() - start_time))
 
 
