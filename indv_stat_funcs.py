@@ -12,8 +12,8 @@ def return_opponents_in_next_seven_gws(element_team, element_fixtures, cgw):
     element_fixtures = element_fixtures[element_fixtures.event != cgw]
     element_fixtures.reset_index(inplace=True)
     # Make lists of fixtures that can be used to identify the opponent by comparing against the element's team ID
-    home_fixtures = element_fixtures.team_h.to_list()
-    away_fixtures = element_fixtures.team_a.to_list()
+    home_fixtures = element_fixtures.team_h  # to_list removed from here
+    away_fixtures = element_fixtures.team_a  # to_list removed from here
     # Will store fixtures
     fixtures = []
     # Used to index rows and starts at -1 so that the first index is 0
@@ -79,32 +79,26 @@ def past_x_performances(element_history, x):
                                        'starts',
                                        'bonus']]
     # Return the element's last x fixtures
-    previous_x_fix_stats = return_n_rows_from_bottom(x, element_history)
-    # Create new list of fixtures that contains a sum of the elements stats in their past x fixtures
-    sum_previous_seven_fix = previous_x_fix_stats.sum(axis=0).to_list()
-    # Calculate the number of games they have played by counting fixtures in range x where their minutes > 0
-    games_played = previous_x_fix_stats[previous_x_fix_stats['minutes'] > 0].count()[4]
-    # If they played at least one game
+    element_history_x_gws = element_history.tail(x)
+    element_starts = element_history_x_gws.sum(axis=0)[5]
+    games_played = element_history_x_gws[element_history_x_gws['minutes'] != 0].count()[4]
     if games_played > 0:
-        # divide each stat by the number of games they played to find the average
-        avg_stats_across_x = [x / games_played for x in sum_previous_seven_fix]
-        # Add total starts back into the list, rather than average starts
-        avg_stats_across_x[5] = sum_previous_seven_fix[5]
-    # If they played no games, set each stat to 0
+        element_history_x_gws = element_history_x_gws[element_history_x_gws['minutes'] != 0]
+        avg_stats_across_x = element_history_x_gws.mean()
+        avg_stats_across_x[5] = element_starts
     else:
         avg_stats_across_x = [0, 0, 0, 0, 0, 0, 0]
+    # # Create new list of fixtures that contains a sum of the elements stats in their past x fixtures
+    # sum_previous_seven_fix = element_history_x_gws.sum(axis=0) # to_list removed from here
+    # # Calculate the number of games they have played by counting fixtures in range x where their minutes > 0
+    # games_played = element_history_x_gws[element_history_x_gws['minutes'] > 0].count()[4]
+    # # If they played at least one game
+    # if games_played > 0:
+    #     # divide each stat by the number of games they played to find the average
+    #     avg_stats_across_x = [x / games_played for x in sum_previous_seven_fix]
+    #     # Add total starts back into the list, rather than average starts
+    #     avg_stats_across_x[5] = sum_previous_seven_fix[5]
+    # # If they played no games, set each stat to 0
+    # else:
+    #     avg_stats_across_x = [0, 0, 0, 0, 0, 0, 0]
     return avg_stats_across_x
-
-
-# A function to return a given amount of rows from the bottom of a df, or as many as is possible to return up to n
-def return_n_rows_from_bottom(n, df):
-    # If there are at least as many rows as requested to return
-    if len(df) >= n:
-        bottom = len(df)
-        n_from_bottom = len(df) - n
-        n_rows = df.iloc[n_from_bottom:bottom, :]
-    # If there aren't at least as many, return as many as possible
-    else:
-        n_rows = df.iloc[:, :]
-    return n_rows
-

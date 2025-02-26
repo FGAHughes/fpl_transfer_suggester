@@ -17,7 +17,7 @@ warnings.simplefilter(action='ignore', category=FutureWarning)
 
 # TO RUN THE PROGRAM, NAVIGATE TO THE BOTTOM AND INPUT YOUR PARAMETERS INTO THE FUNCTION
 def run_fpl_script(gw_comparison, force_update, manager_id):
-    start_time = time.time()
+    start_time_api = time.time()
     # Return's a json file from the fpl website, containing key data
     main_response = return_main_response()
     # A function to determine whether it has been 12 hours or a fixture has finished since the last update
@@ -53,12 +53,13 @@ def run_fpl_script(gw_comparison, force_update, manager_id):
         # Predict each elements points across the next 7 fixtures
         element_master = predict_points(team_master, element_master, gw_comparison)
         # Print time take to update
-        print("--- Data Upload Run Time: %s seconds ---" % (time.time() - start_time))
+        print("--- Data Upload Run Time: %s seconds ---" % (time.time() - start_time_api))
 
     else:
         # If you didn't put True or False as 'force_update' parameter
         print('You need to input True or False.')
         exit()
+    start_time_calc = time.time()
     # Return fpl managers team and bank based on 'manager_id' parameter
     manager_elements, manager_bank = return_manager_stats(manager_id, current_gameweek)
     # Suggest transfers for same manager
@@ -74,13 +75,22 @@ def run_fpl_script(gw_comparison, force_update, manager_id):
     # Show suggested starting 11
     print(starting_xi)
     # If you want to see a specific player's statistics and predicted points, write out the code as follows:
-    # print(element_master[element_master['web_name']=='NAME_ON_FPL_HERE'])
+    print(element_master[element_master['web_name']=='Wan-Bissaka'])
+    print(element_master[element_master['web_name']=='O.Dango'])
+    print(element_master[element_master['web_name']=='Cunha'])
+    print(element_master[element_master['web_name']=='Bowen'])
+    print(element_master[element_master['web_name']=='Rashford'])
 
-    print("--- Total Run Time: %s seconds ---" % (time.time() - start_time))
+
+
+
+
+
+    print("--- Calc Run Time: %s seconds ---" % (time.time() - start_time_calc))
 
 
 # Input parameters here to run the script
 #   gw_comparison: the range of gameweeks you would like to see the elements with the highest predicted points for
 #   force_update: forcefully update the data now? (it ill automatically update after every fixture or 12 hours)
 #   manager_id: the id of the manager to suggest transfers for. If you don't know how to find this, read README.md
-run_fpl_script(gw_comparison=5, force_update=False, manager_id=705204)
+run_fpl_script(gw_comparison=2, force_update=True, manager_id=705204)

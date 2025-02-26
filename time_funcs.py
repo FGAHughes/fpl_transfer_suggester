@@ -59,7 +59,7 @@ def update_or_not():
     # Save last update time
     last_update_time = datetime.strptime(last_update_time, '%Y-%m-%d %H:%M:%S')
     # Return the most recent fixture to have finished
-    most_recent_fixture = fixture_tracker[fixture_tracker['finished'] == True].iloc[-1].to_list()[2]
+    most_recent_fixture = fixture_tracker[fixture_tracker['finished'] == True].iloc[-1][2]  # to_list removed from here
     # Return update decision of True after every finished fixture or if data hasn't been updated every 12 hours (to
     # account for potential injuries and transfers)
     if (most_recent_fixture > last_update_time) or last_update_time < (datetime.now() - relativedelta(hours=12)):

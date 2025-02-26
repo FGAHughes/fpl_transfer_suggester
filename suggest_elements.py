@@ -1,6 +1,5 @@
 import requests
 import pandas as pd
-import time
 import numpy as np
 
 # show all columns
@@ -54,7 +53,7 @@ def suggest_transfers(my_elements, bank, element_master, gw_comparison):
         affordable_elements = relevant_type_elements[relevant_type_elements['now_cost'] <= element_cost+bank]
         # Add the top 3 of these to df will be compiled to created suggested transfers
         suggested_transfers_sub = affordable_elements[affordable_elements[f'pp_{gw_comparison}'] > element_pp].head(3)
-        # If there were any suggested transfers for the element,
+        # If there were any suggested transfers for the element
         if len(suggested_transfers_sub) > 0:
             #  Add column of the manager's element to transfer out
             suggested_transfers_sub.insert(column='out', loc=1, value=element_web_name)

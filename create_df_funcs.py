@@ -9,6 +9,7 @@ pd.set_option('display.width', 400)
 pd.set_option('display.max_columns', 100)
 pd.set_option('display.max_rows', 100)
 
+
 # A function that returns a JSON file from the FPL website
 def return_main_response():
     main_response = requests.get('https://fantasy.premierleague.com/api/bootstrap-static/')
@@ -94,6 +95,7 @@ def create_element_master(main_response, current_gameweek):
     print('\"element_master\" created')
     return element_master
 
+
 # A function that adds multipliers to a dataframe depending on the element's position
 def add_positional_multipliers(element_master):
     # Make a df of the positions and goal, assist and clean sheet multipliers for each position
@@ -134,6 +136,16 @@ def predict_points(team_master, element_master, gw_comparison):
     for gw in range(1, 8):
         element_master = add_cumulative_predict_points_column(element_master, gw)
     # Select only useful columns
+
+    team_name_mapping = {1: 'ARS', 2: 'AVL', 3: 'BOU', 4: 'BRE', 5: 'BRI', 6: 'CHE', 7: 'CRY', 8: 'EVE', 9: 'FUL',
+                         10: 'IPS', 11: 'LEI', 12: 'LIV', 13: 'MCI', 14: 'MUN', 15: 'NEW', 16: 'NFO', 17: 'SOU',
+                         18: 'TOT', 19: 'WHU', 20: 'WOL', 0: None}
+
+    for i in range(1, 8):
+        element_master[f'fix{i}a'] = element_master[f'fix{i}a'].map(team_name_mapping)
+        element_master[f'fix{i}b'] = element_master[f'fix{i}b'].map(team_name_mapping)
+        element_master[f'fix{i}'] = element_master.apply(lambda row: [row[f'fix{i}a'], row[f'fix{i}b']] if row[f'fix{i}b'] is not None else row[f'fix{i}a'], axis=1)
+
     element_master = element_master[['id',
                                      'og_id',
                                      'web_name',
@@ -154,6 +166,13 @@ def predict_points(team_master, element_master, gw_comparison):
                                      'gw5_pp',
                                      'gw6_pp',
                                      'gw7_pp',
+                                     'fix1',
+                                     'fix2',
+                                     'fix3',
+                                     'fix4',
+                                     'fix5',
+                                     'fix6',
+                                     'fix7',
                                      'pp_1',
                                      'pp_2',
                                      'pp_3',
