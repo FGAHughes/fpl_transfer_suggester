@@ -46,10 +46,13 @@ def run_fpl_script(gw_comparison, force_update, manager_id):
         save_update_time()
         # Connect to FPL API and fetch element data
         element_master = create_element_master(main_response, current_gameweek)
+
         # Creates dataframe containing team data (e.g. team xg, team xgc, team names, etc)
         team_master = create_team_master(element_master)
+
         # Merge team data onto each element
         element_master = add_team_data(team_master, element_master)
+
         # Predict each elements points across the next 7 fixtures
         element_master = predict_points(team_master, element_master, gw_comparison)
         # Print time take to update
@@ -75,15 +78,7 @@ def run_fpl_script(gw_comparison, force_update, manager_id):
     # Show suggested starting 11
     print(starting_xi)
     # If you want to see a specific player's statistics and predicted points, write out the code as follows:
-    print(element_master[element_master['web_name']=='Wan-Bissaka'])
-    print(element_master[element_master['web_name']=='O.Dango'])
-    print(element_master[element_master['web_name']=='Cunha'])
-    print(element_master[element_master['web_name']=='Bowen'])
-    print(element_master[element_master['web_name']=='Rashford'])
-
-
-
-
+    # print(element_master[element_master['element_type']== 2])
 
 
     print("--- Calc Run Time: %s seconds ---" % (time.time() - start_time_calc))
@@ -93,4 +88,4 @@ def run_fpl_script(gw_comparison, force_update, manager_id):
 #   gw_comparison: the range of gameweeks you would like to see the elements with the highest predicted points for
 #   force_update: forcefully update the data now? (it ill automatically update after every fixture or 12 hours)
 #   manager_id: the id of the manager to suggest transfers for. If you don't know how to find this, read README.md
-run_fpl_script(gw_comparison=2, force_update=True, manager_id=705204)
+run_fpl_script(gw_comparison=5, force_update=True, manager_id=5033475)

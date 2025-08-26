@@ -22,7 +22,7 @@ def return_manager_stats(manager_id, current_gameweek):
     # Return manager info
     gameweek_info = pd.json_normalize(gameweek_response.json(), record_path='picks')
     # Return manager's elements
-    gameweek_elements = gameweek_info[['element']]
+    gameweek_elements = gameweek_info[['element']][0:15]
     # Return the amount of money available in the manager's bank
     gameweek_bank = pd.json_normalize(gameweek_response.json()).iloc[0, 10]
     return gameweek_elements, gameweek_bank
@@ -36,7 +36,7 @@ def suggest_transfers(my_elements, bank, element_master, gw_comparison):
     # Make a copy of element_master, only with player's we may consider bringing in
     element_master_copy = element_master.drop(element_master[element_master['minutes'] < 60].index)
     element_master_copy = element_master_copy.drop(element_master_copy[element_master_copy['chance_of_playing_next_round'] < 75].index)
-    element_master_copy = element_master_copy.drop(element_master_copy[element_master_copy['starts'] < 2].index)
+    element_master_copy = element_master_copy.drop(element_master_copy[element_master_copy['starts'] < 1].index)
     relevant_element_info = element_master_copy[['web_name', 'element_type', f'pp_{gw_comparison}', 'now_cost']]
     # Create a df that will be used to store suggested transfers
     suggested_transfers_main = pd.DataFrame(columns=['web_name', 'out', 'element_type'])

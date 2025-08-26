@@ -49,12 +49,14 @@ def create_element_master(main_response, current_gameweek):
         element_team = element_master.team[element]
         # Connect to FPL API and return dfs for each element's fixtures and stats
         element_fixtures_df, element_stats_df = create_element_dfs(element_og_id)
+        element_fixtures_df.to_csv(f'csvs/element_fixtures/{element}_fix.csv', index=False)
+        element_fixtures_df.to_csv(f'csvs/element_history/{element}_hist.csv', index=False)
         # Ensures df isn't empty, which can happen if a newly signed player has just been added to FPL
         if element_stats_df.empty:
             element_stats = [0, 0, 0, 0, 0, 0, 0]
         else:
             # A function to return an elements stats on average across their last x fixtures (recommended range is 9)
-            element_stats = past_x_performances(element_stats_df, 9)
+            element_stats = past_x_performances(element_stats_df, 7)
         # If the previous and current elements doesn't share a team
         if element_team != previous_element_team:
             # return element's fixtures across the next 7 gws
@@ -137,9 +139,29 @@ def predict_points(team_master, element_master, gw_comparison):
         element_master = add_cumulative_predict_points_column(element_master, gw)
     # Select only useful columns
 
-    team_name_mapping = {1: 'ARS', 2: 'AVL', 3: 'BOU', 4: 'BRE', 5: 'BRI', 6: 'CHE', 7: 'CRY', 8: 'EVE', 9: 'FUL',
-                         10: 'IPS', 11: 'LEI', 12: 'LIV', 13: 'MCI', 14: 'MUN', 15: 'NEW', 16: 'NFO', 17: 'SOU',
-                         18: 'TOT', 19: 'WHU', 20: 'WOL', 0: None}
+    team_name_mapping = {
+        1: 'ARS',  # Arsenal
+        2: 'AVL',  # Aston Villa
+        3: 'BOU',  # Bournemouth
+        4: 'BRE',  # Brentford
+        5: 'BRI',  # Brighton & Hove Albion (or BHA)
+        6: 'BUR',  # Burnley
+        7: 'CHE',  # Chelsea
+        8: 'CRY',  # Crystal Palace
+        9: 'EVE',  # Everton
+        10: 'FUL',  # Fulham
+        11: 'LEE',  # Leeds United
+        12: 'LIV',  # Liverpool
+        13: 'MCI',  # Manchester City
+        14: 'MUN',  # Manchester United
+        15: 'NEW',  # Newcastle United
+        16: 'NFO',  # Nottingham Forest
+        17: 'SUN',  # Sunderland
+        18: 'TOT',  # Tottenham Hotspur
+        19: 'WHU',  # West Ham United
+        20: 'WOL',  # Wolverhampton Wanderers
+        0: None  # or any fallback
+    }
 
     for i in range(1, 8):
         element_master[f'fix{i}a'] = element_master[f'fix{i}a'].map(team_name_mapping)
@@ -238,8 +260,8 @@ def create_team_master(element_master):
     # Appending team '0' which will be used for blank gameweeks
     team_df.append([0, 'BLANK', 0, 0, 0])
     # List of team names (shorthand)
-    team_names = ['ARS', 'AVL', 'BOU', 'BRE', 'BRI', 'CHE', 'CRY', 'EVE', 'FUL', 'IPS',
-                  'LEI', 'LIV', 'MCI', 'MUN', 'NEW', 'NFO', 'SOU', 'TOT', 'WHU', 'WOL']
+    team_names = ['ARS', 'AVL', 'BOU', 'BRE', 'BRI', 'BUR', 'CHE', 'CRY', 'EVE', 'FUL', 'LEE',
+                  'LIV', 'MCI', 'MUN', 'NEW', 'NFO', 'SUN', 'TOT', 'WHU', 'WOL']
     # Add list of info and stats per team to the list that will be added to df as team data
     for i in range(1, 21):
         team_row = []
@@ -254,7 +276,7 @@ def create_team_master(element_master):
         # Append team expected assists
         team_row.append((sum(team_players.xa_value)))
         # Append team expected goals conceded
-        team_row.append(sum(team_players.xgc_value) / 11)
+        team_row.append(max(team_players.xgc_value))  # THIS DOESN'T WORK BECAUSE WHAT IF THEY GET A RED CARD!!!!!!
         # Append team data to main team list
         team_df.append(team_row)
     # Create team df
@@ -326,7 +348,7 @@ def predict_gameweek_points(element_master, team_master, gameweek, a_or_b):
         if 0 < row['minutes'] < 60 else row[f'gw{gameweek}_pp{a_or_b}'], axis=1)
     # If element isn't fit, set predicted points to 0
     element_master[f'gw{gameweek}_pp{a_or_b}'] = element_master.apply(
-        lambda row: 0 if (row['chance_of_playing_next_round'] < 75 or row['starts'] <= 2) else row[
+        lambda row: 0 if (row['chance_of_playing_next_round'] < 75 or row['starts'] < 1) else row[
             f'gw{gameweek}_pp{a_or_b}'], axis=1)
     # If the fixture is blank or there is no double, set the predicted points to 0
     element_master[f'gw{gameweek}_pp{a_or_b}'] = element_master.apply(
